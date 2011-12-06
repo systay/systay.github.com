@@ -60,6 +60,9 @@ A simple example, where we find all nodes that are connected to node with id 101
 
 
 There is no join table here, but if one is necessary writing the pattern relationship like so: -[r]-> will introduce (the equivalent of) a join table named r. In reality this is a named relationship in Cypher, so we're saying "join foo to bar via r."
+To illustrate this, consider this image, comparing the SQL modell and Neo4j/Cypher.
+
+![Join](http://i.imgur.com/YkVFN.png "Join and patterns")     
 
 ### SQL
     SELECT bar.*, foo_bar.*
@@ -68,17 +71,12 @@ There is no join table here, but if one is necessary writing the pattern relatio
       JOIN bar ON foo_bar.bar_id = bar.id
     WHERE foo.id = 1
 
-![Legend](http://i.imgur.com/Qxdmr.png "Legend")     
-![Legend](http://i.imgur.com/KOzvV.png "SQL Query")     
-
 ### Cypher
     START foo=node(1)
     MATCH foo-[foo_bar]->bar
     RETURN bar, foo_bar
 
-![Legend](http://i.imgur.com/pSVGj.png "Cypher query")     
-
-An outer join is just as easy. Add a question mark -[?:KNOWS]-> and it's an optional relationship between nodes - the outer join of Cypher.
+An [outer join](http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html) is just as easy. Add a question mark -[?:KNOWS]-> and it's an optional relationship between nodes - the outer join of Cypher.
 
 Whether it's a left outer join, or a right outer join is defined by which side of the pattern has a starting point. This first example is a left outer join, because the bound node is on the left side:
 
