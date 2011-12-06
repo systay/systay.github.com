@@ -154,7 +154,7 @@ Aggregate queries work just like they do in SQL, apart from the fact that there 
 
 Order by is the same in both languages - ORDER BY expression ASC/DESC. Nothing weird here.
 
-Use the right tool
+# Use the right tool
 
 No database is the silver bullet for data persistence and querying. That is what NOSQL means to us - look at your data and what you want to do with it, and then choose the appropriate tool for the job. Neo4j and Cypher are custom built for graph problems. Compare the shortest path query here with what it looks like in Cypher:
 
