@@ -68,7 +68,7 @@ There is no join table here, but if one is necessary writing the pattern relatio
       JOIN bar ON foo_bar.bar_id = bar.id
     WHERE foo.id = 1
 
-![Legend](http://i.imgur.com/ph7dn.png "Legend")     
+![Legend](http://i.imgur.com/Qxdmr.png "Legend")     
 ![Legend](http://i.imgur.com/KOzvV.png "SQL Query")     
 
 ## Cypher
