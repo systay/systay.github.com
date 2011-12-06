@@ -68,11 +68,15 @@ There is no join table here, but if one is necessary writing the pattern relatio
       JOIN bar ON foo_bar.bar_id = bar.id
     WHERE foo.id = 1
 
+![Legend](http://i.imgur.com/ph7dn.png "Legend")     
+![Legend](http://i.imgur.com/KOzvV.png "SQL Query")     
+
 ## Cypher
     START foo=node(1)
     MATCH foo-[foo_bar]->bar
     RETURN bar, foo_bar
 
+![Legend](http://i.imgur.com/pSVGj.png "Cypher query")     
 
 An outer join is just as easy. Add a question mark -[?:KNOWS]-> and it's an optional relationship between nodes - the outer join of Cypher.
 
