@@ -27,12 +27,12 @@ From a SQL point of view, the identifiers in a START are like table names that p
 
 So in fact rather than being SELECT-like, the START clause is somewhere between the FROM and the WHERE clause in SQL. 
 
-## SQL
+### SQL
     SELECT *
     FROM  Person
     WHERE firstName = "Anakin"
 
-## Cypher
+### Cypher
     START anakin=node:persons(firstName = "Anakin")
     RETURN anakin
 
@@ -47,13 +47,13 @@ The shape of the subgraph is specified in the MATCH clause. The MATCH clause is 
 
 A simple example, where we find all nodes that are connected to node with id 101, through an incoming relationship.
 
-## SQL
+### SQL
     SELECT bar.*
     FROM foo 
     JOIN bar ON foo.id = bar.foo_id
     WHERE foo.id = 101
 
-## Cypher
+### Cypher
     START foo=node(101)
     MATCH foo-->bar
     RETURN bar
@@ -61,7 +61,7 @@ A simple example, where we find all nodes that are connected to node with id 101
 
 There is no join table here, but if one is necessary writing the pattern relationship like so: -[r]-> will introduce (the equivalent of) a join table named r. In reality this is a named relationship in Cypher, so we're saying "join foo to bar via r."
 
-## SQL
+### SQL
     SELECT bar.*, foo_bar.*
     FROM foo 
       JOIN foo_bar ON foo.id = foo_bar.foo_id 
@@ -71,7 +71,7 @@ There is no join table here, but if one is necessary writing the pattern relatio
 ![Legend](http://i.imgur.com/Qxdmr.png "Legend")     
 ![Legend](http://i.imgur.com/KOzvV.png "SQL Query")     
 
-## Cypher
+### Cypher
     START foo=node(1)
     MATCH foo-[foo_bar]->bar
     RETURN bar, foo_bar
@@ -82,26 +82,26 @@ An outer join is just as easy. Add a question mark -[?:KNOWS]-> and it's an opti
 
 Whether it's a left outer join, or a right outer join is defined by which side of the pattern has a starting point. This first example is a left outer join, because the bound node is on the left side:
 
-## SQL
+### SQL
     SELECT bar.*
     FROM foo 
     LEFT JOIN bar ON foo.id = bar.foo_id
     WHERE foo.id = 1
 
-## Cypher
+### Cypher
     START foo=node(1)
     MATCH foo-[?]->bar
     RETURN bar
 
 If the right side is has the start point, it is a right outer join. And if both sides have starting points, it's a full outer join, like this:
 
-## SQL
+### SQL
     SELECT bar.*
     FROM foo 
       FULL OUTER JOIN bar ON foo.id = bar.foo_id
     WHERE foo.id = 1 and bar.id = 2
 
-## Cypher
+### Cypher
     START foo=node(1), bar=node(2)
     MATCH foo-[r?]->bar
     RETURN r
@@ -114,7 +114,7 @@ One such domain is tree structures - anyone that has tried storing tree structur
 
 To find all the groups and sub-groups that Anakin belongs to,  this query is enough in Cypher:
 
-## Cypher
+### Cypher
     START user=node:person(name="Anakin")
     MATCH group<-[:BELONGS_TO*]-user
     RETURN group
@@ -125,12 +125,12 @@ The * after the relationship type means that there can be multiple hops across B
 
 This is the easiest thing to understand - it's the same animal in both languages. It filters out result sets/subgraphs. Not all predicates have a equivalent in the other language, but the concept is the same.
 
-## SQL
+### SQL
     SELECT person.*
     FROM person
     WHERE person.age >35 OR person.hair = "blonde"
 
-## Cypher
+### Cypher
     START person = node:persons("name:*")
     WHERE person.age >35 OR person.hair = "blonde"
     RETURN person
@@ -141,12 +141,12 @@ This is SQL's SELECT. We just put it in the end because it felt better to have i
 
 Aggregate queries work just like they do in SQL, apart from the fact that there is no explicit GROUP BY clause. Everything in the return clause that is not an aggregate function will be used as the grouping columns.
 
-## SQL
+### SQL
     SELECT person.name, count(*)
     FROM Person
     GROUP BY person.name
 
-## Cypher
+### Cypher
     START person=node:persons("name:*")
     MATCH person-->friend
     RETURN person.name, count(*)
@@ -158,7 +158,7 @@ Order by is the same in both languages - ORDER BY expression ASC/DESC. Nothing w
 
 No database is the silver bullet for data persistence and querying. That is what NOSQL means to us - look at your data and what you want to do with it, and then choose the appropriate tool for the job. Neo4j and Cypher are custom built for graph problems. Compare the shortest path query [here](http://stackoverflow.com/questions/6873772/sql-postgres-shortest-path-in-graph-recursion/6900257#6900257) (all 43 lines of it) with what it looks like in Cypher:
 
-## Cypher
+### Cypher
     START lucy=node(1000), kevin=node(759)
     MATCH p = shortestPath( lucy-[*]-kevin )
     RETURN p
