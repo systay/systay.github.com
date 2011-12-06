@@ -62,7 +62,7 @@ A simple example, where we find all nodes that are connected to node with id 101
 There is no join table here, but if one is necessary writing the pattern relationship like so: -[r]-> will introduce (the equivalent of) a join table named r. In reality this is a named relationship in Cypher, so we're saying "join foo to bar via r."
 
 ## SQL
-    SELECT bar.*, r.*
+    SELECT bar.*, foo_bar.*
     FROM foo 
       JOIN foo_bar ON foo.id = foo_bar.foo_id 
       JOIN bar ON foo_bar.bar_id = bar.id
