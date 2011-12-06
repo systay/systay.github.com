@@ -59,7 +59,7 @@ A simple example, where we find all nodes that are connected to node with id 101
     RETURN bar
 
 
-There is no join table here, but if one is necessary writing the pattern relationship like so: -[r]-> will introduce (the equivalent of) a join table named r. In reality this is a named relationship in Cypher, so we're saying "join foo to bar via r."
+There is no join table here, but if one is necessary writing the pattern relationship like so: -[foo_bar]-> will introduce (the equivalent of) a join table named foo_bar. In reality this is a named relationship in Cypher, so we're saying "join foo to bar via foo_bar."
 To illustrate this, consider this image, comparing the SQL modell and Neo4j/Cypher.
 
 ![Join](http://i.imgur.com/YkVFN.png "Join and patterns")     
