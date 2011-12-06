@@ -1,3 +1,5 @@
+/* @override http://systay.github.com/static/css/mojobojo.css */
+
 body {
 	font: 14px/1.5em "Lucida Grande", "Lucida Sans Unicode";
 	color: white;
@@ -8,9 +10,22 @@ h1, h2 {
 	color: orange;
 }
 
+h1 {
+	margin-top: 2em;
+}
+
 h3, h4, h5 {
     color: lightblue;
 }
+
+h3 {
+	font-size: 1.2em;
+	font-weight: normal;
+	font-style: normal;
+	margin-top: 1.0em;
+	margin-bottom: 0.2em;
+}
+
 
 a {
 	color: #AABF73;
@@ -126,3 +141,14 @@ p.intro:first-letter {
 	display: block;
 	margin: 10px;
 }
+
+pre {
+	margin: 0;
+	padding: 1em;
+	background-color: #212121;
+}
+
+p img {
+	
+}
+
