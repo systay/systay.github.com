@@ -154,7 +154,7 @@ Order by is the same in both languages - ORDER BY expression ASC/DESC. Nothing w
 
 # Use the right tool
 
-No database is the silver bullet for data persistence and querying. That is what NOSQL means to us - look at your data and what you want to do with it, and then choose the appropriate tool for the job. Neo4j and Cypher are custom built for graph problems. Compare the shortest path query [here](http://stackoverflow.com/questions/6873772/sql-postgres-shortest-path-in-graph-recursion/6900257#6900257) (all 43 lines of it) with what it looks like in Cypher:
+No database is the silver bullet for data persistence and querying. That is what NOSQL means to us - look at your data and what you want to do with it, and then choose the appropriate tool for the job. Neo4j and Cypher are custom built for the challenges of heavily connected data. Compare the shortest path query [here](http://stackoverflow.com/questions/6873772/sql-postgres-shortest-path-in-graph-recursion/6900257#6900257) (all 43 lines of it) with what it looks like in Cypher:
 
 ### Cypher
     START lucy=node(1000), kevin=node(759)
