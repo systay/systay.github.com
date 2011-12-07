@@ -148,7 +148,7 @@ Aggregate queries work just like they do in SQL, apart from the fact that there 
     START person=node:persons("name:*")
     MATCH person-->friend
     RETURN person.name, count(*)
-    ORDER BY
+    ORDER BY person.name
 
 Order by is the same in both languages - ORDER BY expression ASC/DESC. Nothing weird here.
 
