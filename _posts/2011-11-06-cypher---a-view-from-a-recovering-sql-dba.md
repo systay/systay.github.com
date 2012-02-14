@@ -143,10 +143,10 @@ Aggregate queries work just like they do in SQL, apart from the fact that there 
     SELECT person.name, count(*)
     FROM Person
     GROUP BY person.name
+    ORDER BY person.name
 
 ### Cypher
     START person=node:persons("name:*")
-    MATCH person-->friend
     RETURN person.name, count(*)
     ORDER BY person.name
 
