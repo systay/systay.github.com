@@ -1,6 +1,6 @@
 title: Conscious Incompetence
 permalink: /blog/:year/:month/:day/:title
-markdown: rdiscount
+markdown: GFM
 pygments: true
 exclude:
   README.md
