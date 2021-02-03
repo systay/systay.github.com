@@ -1,6 +1,8 @@
 title: Conscious Incompetence
 permalink: /blog/:year/:month/:day/:title
-markdown: GFM
+incremental: false
+highlighter: rouge
+kramdown:
   syntax_highlighter: rouge
 exclude:
   README.md
