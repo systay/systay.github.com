@@ -4,3 +4,4 @@ markdown: rdiscount
 pygments: true
 exclude:
   README.md
+theme: jekyll-theme-hacker
