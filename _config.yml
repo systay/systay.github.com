@@ -1,7 +1,7 @@
 title: Conscious Incompetence
 permalink: /blog/:year/:month/:day/:title
 markdown: GFM
-pygments: true
+  syntax_highlighter: rouge
 exclude:
   README.md
 theme: jekyll-theme-hacker
