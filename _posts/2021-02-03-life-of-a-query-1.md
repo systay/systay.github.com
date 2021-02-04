@@ -9,7 +9,8 @@ summary: What happens when you issue a query to a vtgate?
 SQL is a declarative language, which means you tell it what you want done, and the database engine figures out how to do it for you.
 When I started with databases, this seemed an almost magical process to me, and I have been fascinated by it for decades now.
 
-I have been working on a new query planner for Vitess, and I wanted to share what the design looks like and what the important characters in this story are.
+As my 20% project, I have been working on a new query planner for Vitess, and I wanted to share what the design looks like and what the important characters in this story are.
+The project is being tracked here: https://github.com/vitessio/vitess/issues/7280
 
 ### Step 1 - Parsing
 
