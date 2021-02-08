@@ -75,17 +75,25 @@ It's fast, used by lots of other projects, and built using yacc.
 Before passing on the AST, we rewrite it a little. 
 We do this for three reasons: 
 
-1. We want queries to share the same plan when possible, so we remove literals. 
+1. We want queries to share the same plan when possible, so we remove literals.
+   
+   ```SELECT 42```
 
-    `SELECT 42` -> `SELECT :_vtlit1`
+   is turned into    
 
-    If we later encounter `SELECT 5`, we can use the cached plan.
+   ```SELECT :_vtlit1```
+
+   If we later encounter `SELECT 5`, we can use the cached plan.
 
 2. To minimize the work the planner needs to do, we normalize the AST, so the planner doesn't have to understand two equivalent ways of expressing the same thing.
 
     An example of this is that we make sure that columns are on the left-hand side of equality comparisons. 
 
-    `42 = t.col` => `t.col = 42`
+    ```42 = t.col```
+   
+   is turned into 
+
+    ```t.col = 42```
 
 3. A very important part of what Vitess does is to create an illusion for the user.
 
