@@ -10,7 +10,14 @@ SQL is a declarative language, which means you tell it what you want done, and t
 When I started with databases, this seemed an almost magical process to me, and I have been fascinated by it for decades now.
 
 As my 20% project, I have been working on a new query planner for Vitess, and I wanted to share what the design looks like and what the important characters in this story are.
-The project is being tracked here: https://github.com/vitessio/vitess/issues/7280
+The project is being tracked [here](https://github.com/vitessio/vitess/issues/7280).
+
+Before I write more about the details, let me tell you about one driving force behind the design.
+During plan building, the process of creating and evaluating differ access patterns is the most costly.
+This is just because of the search space that has to be explored - the number of possible plans grows exponentially with the number of tables involved in the query.
+So a lot of the steps and complications that come before are done so that this expensive evaluation can be done as efficiently as possible.
+
+Now to the first step during query execution 
 
 ### Step 1 - Parsing
 
@@ -85,3 +92,5 @@ We do this for three reasons:
     It's the illusion of a dedicated connection to a single database, when in reality, Vitess will do connection pooling for you, and spread out your query to sometimes hundreds of MySQL instances.
    To create the illusion, we rewrite away variables, both system variables and user defined variables, and lots of function calls.
    We also change queries against the information_schema to use the table and database names that are really used in MySQL.
+   
+By the end of these two steps, we are still working with the input query that the user sent, but it's been massaged into a form that is easier for the planner to work with.

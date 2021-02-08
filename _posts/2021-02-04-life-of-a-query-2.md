@@ -6,11 +6,12 @@ summary: What happens when you issue a query to a vtgate?
 
 # {{ page.title }}
 
-(This is a post in a series. You should start here: [Parsing and Rewriting](./life-of-a-query-1))
+(This is a post in a series. You should start here: [Parsing and Rewriting](/blog/2021/02/03/life-of-a-query-1))
 
 By now we have a well formed tree structure representing the query the user sent. Next step is called semantic analysis.
 
-I'll use the following query as a running example.
+
+I'll use the following query to illustrate how it's done.
 
 ```sql
 SELECT
