@@ -102,3 +102,5 @@ We do this for three reasons:
    We also change queries against the information_schema to use the table and database names that are really used in MySQL.
    
 By the end of these two steps, we are still working with the input query that the user sent, but it's been massaged into a form that is easier for the planner to work with.
+
+Next up is [semantic analysis](/blog/2021/02/04/life-of-a-query-2).
