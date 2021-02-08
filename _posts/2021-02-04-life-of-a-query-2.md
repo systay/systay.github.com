@@ -70,10 +70,12 @@ When visiting the expressions of **S2**, we note the current scope for the expre
 
 There is nothing left of **S2** to visit, so we exit the sub query. When coming back up from **S2**, we pop the top-most scope, and we are ready to do the binding process.
 
-Binding is visiting all the column expressions, and figuring out, given the scoping information, which is the table named `tbl` the is being referenced. For some column expressions, if the user has not provided a qualifier, we need to look up column information for all available tables and check if we can uniquely identify which one the user means. This information is persisted in the semantic table, which is the output of this process.
+Binding is visiting all the column expressions, and figuring out, given the scoping information, which table the column belongs to. If the user has not provided a qualifier, we need to look up column information for all available tables and check if we can uniquely identify which one the user means. This binding information is stored the semantic table - the output of this process.
 
 To do this as fast as possible, we do this in a single tree traversal, not in to separate steps. This way, we don't have to remember scope information per expression - we just use the current scope stack, looking down the stack until we find the table. 
 
 Also, instead of using strings to reference the dependencies, we use bitmasks, where each table is a bit in an uint64 value.
 At the end of the semantic processing, we have the dependency information we need in for all expressions in the query.
+
+This information is next used to create the query graph, the next stop in the journey to a Vitess execution plan.
 
