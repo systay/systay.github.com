@@ -77,5 +77,32 @@ To do this as fast as possible, we do this in a single tree traversal, not in to
 Also, instead of using strings to reference the dependencies, we use bitmasks, where each table is a bit in an uint64 value.
 At the end of the semantic processing, we have the dependency information we need in for all expressions in the query.
 
-This information is next used to create the query graph, the next stop in the journey to a Vitess execution plan.
+The devil is in the details, so let me spell it out:
 
+```go
+  type TableSet uint64
+
+  type table struct {
+    tableName, alias string
+  }
+
+  type SemTable struct {
+    Tables           []table
+    exprDependencies map[sqlparser.Expr]TableSet
+  }
+```
+
+The way to get the TableSet for a table is to find the offset in the `Tables` for the table we are looking for, and then left shift 1 that many steps.
+
+```go
+func (st *SemTable) TableSetFor(t table) TableSet {
+  for idx, t2 := range st.Tables {
+    if t == t2 {
+      return 1 << idx
+    }
+  }
+  return 0
+}
+```
+
+This information is used to create the query graph, the next stop in the journey to a Vitess execution plan.
