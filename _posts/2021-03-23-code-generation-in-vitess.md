@@ -42,18 +42,11 @@ To get this, we use golang.org/x/tools/go/packages.
 What we do is to first find the plan struct, and from that, we find all types that are used by the fields of the plan.
 ```go
 type Plan struct {
-    Type         sqlparser.StatementType // The type of query we have
-    Original     string                  // Original is the original query.
-    Instructions Primitive               // Instructions contains the instructions needed to fulfil the query.
-    BindVarNeeds *sqlparser.BindVarNeeds // Stores BindVars needed to be provided as part of expression rewriting
-    Warnings     []*querypb.QueryWarning // Warnings that need to be yielded every time this query runs
-
-    ExecCount    uint64 // Count of times this plan was executed
-    ExecTime     uint64 // Total execution time
-    ShardQueries uint64 // Total number of shard queries
-    RowsReturned uint64 // Total number of rows
-    RowsAffected uint64 // Total number of rows
-    Errors       uint64 // Total number of errors
+    Type         sqlparser.StatementType 
+    Original     string
+    Instructions Primitive
+    BindVarNeeds *sqlparser.BindVarNeeds
+    Warnings     []*querypb.QueryWarning
 }
 ```
 For every type that we encounter, we create a `CachedSize` method that can calculate the memory size of an instance.
