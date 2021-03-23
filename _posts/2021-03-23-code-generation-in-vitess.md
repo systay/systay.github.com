@@ -7,12 +7,12 @@ summary: How to write nice code, and eat the cake too
 # {{ page.title }}
 
 
-Golang is a wonderful language. It's simple and most of the time not confusing or surprising.
+Golang is a wonderful language. It's simple, and most of the time not confusing or surprising.
 This makes it easy to jump into library code and start reading and quickly understand what's going on.
 On the other hand, coming from other languages, there are a few features that would make our lives easier.
 
 We are building Vitess using mostly golang, and most of us are happy with this choice.
-However, because of missing features in the language, we've had to build some of the tooling manually
+However, because of missing features in the language, we've had to build some tooling manually.
 
 Here follows a list of how we are using meta programming in Vitess.
 
@@ -32,17 +32,33 @@ To speed up the parser to ludicrous speed, we forked the goyacc code and adapted
 Query planning is a resource intensive task, and to make sure we don't have to do that more than necessary, we cache plans.
 Whenever you are caching, you need to be concerned about the size of your caches - you don't want the cache to eat too much memory.
 To do that, you need information about how much memory plan tree consume.
-And this is where one of the shortcoming of golang - it's very difficult to do this.
+And this is one of the shortcoming of golang - it's very difficult to do this.
 So, again, meta generation came to the rescue.
 
 Go comes with excellent parser and tokeniser tools to allow you to read Go code as a stream of AST objects.
-Unfortunately, we need more than syntax when looking at our plans to make sense of them - we need dependencies and type information.
+Unfortunately, we need more than syntax when looking at our plans to make sense of them - we also need dependencies and type information.
 To get this, we use golang.org/x/tools/go/packages.
 
 What we do is to first find the plan struct, and from that, we find all types that are used by the fields of the plan.
-For every type that we encounter, we create a `CachedSize` method that can calculate the memory size of a specific plan instance.
-If the type happens to be an interface, we instead find all implementations and do the same exersise again.
-This is done until we have a method for all types that might possibly show up in a plan-tree. You can look at what the these functions look like [here](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/cached_size.go). 
+```go
+type Plan struct {
+    Type         sqlparser.StatementType // The type of query we have
+    Original     string                  // Original is the original query.
+    Instructions Primitive               // Instructions contains the instructions needed to fulfil the query.
+    BindVarNeeds *sqlparser.BindVarNeeds // Stores BindVars needed to be provided as part of expression rewriting
+    Warnings     []*querypb.QueryWarning // Warnings that need to be yielded every time this query runs
+
+    ExecCount    uint64 // Count of times this plan was executed
+    ExecTime     uint64 // Total execution time
+    ShardQueries uint64 // Total number of shard queries
+    RowsReturned uint64 // Total number of rows
+    RowsAffected uint64 // Total number of rows
+    Errors       uint64 // Total number of errors
+}
+```
+For every type that we encounter, we create a `CachedSize` method that can calculate the memory size of an instance.
+If the type happens to be an interface, we instead find all implementations and do the same exercise again.
+This is done until we have a method for all types that might show up in a plan-tree. You can look at what the these functions look like [here](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/cached_size.go). 
 
 ### AST tooling
 
@@ -69,7 +85,7 @@ Equals-16  89.4ns ± 1%  17.0ns ± 1%  -80.97%  (p=0.000 n=8+8)
 
 The `reflect.DeepEqual` is >400% slower than our generated comparator. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_equals.go)
 
-4. We also need to be able to do a deep-clone of the AST. While exploring different alternative plans, we need to be able to clone parts of the AST, so we can change it without changing the original. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_clone.go)
+4. We also need to be able to do a deep-clone of the AST. While exploring different alternative plans, we clone parts of the AST, so we can change it without changing the original. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_clone.go)
 
 5. Finally, our AST knows how to print itself. 
 This is a little trickier than you might think, because we do precedence calculations for expressions to figure out where we need parenthesis. 
@@ -119,3 +135,6 @@ The second reason is that it's just easier to write fast code this way.
 We benchmark and profile the generated code pretty hard, and make sure to squeeze as much juice as possible.
 Then we change the generator, and wham! 642 rewriter methods have been updated. 
 This would not really have been possible if we had to change those methods manually.
+
+Honorable mention:
+Most of this code is heavily influenced by the latest rockstar to join the PlanetScale and Vitess ranks - [@vmg](http://github.com/vmg)
