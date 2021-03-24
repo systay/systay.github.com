@@ -73,10 +73,10 @@ DeepEqual does what we need, but it does so slowly. Comparing our generated equa
    
 ```
 name       old time/op  new time/op  delta
-Equals-16  89.4ns ± 1%  17.0ns ± 1%  -80.97%  (p=0.000 n=8+8)
+Equals-16   813µs ± 0%    11µs ± 1%  -98.64%  (p=0.000 n=9+9)
 ```
 
-The `reflect.DeepEqual` is >400% slower than our generated comparator. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_equals.go)
+The `reflect.DeepEqual` is >72 times slower than our generated comparator. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_equals.go)
 
 4. We also need to be able to do a deep-clone of the AST. While exploring different alternative plans, we clone parts of the AST, so we can change it without changing the original. [Check out the code](https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_clone.go)
 
