@@ -6,7 +6,7 @@ title: Examining query plans in MySQL and Vitess
 # {{ page.title }}
 
 
-Traditional query optimizing is mostly about two things: in which order and from where to access data, and how to then combine it, so it answers the query that the user wrote.
+Traditional query optimizing is mostly about two things: first - in which order and from where to access data, and then how to then combine it.
 
 You have probably seen the tree shapes execution plans that are produced from query planning. I'll use an example from the MySQL docs, using `FORMAT=TREE` which was introduced in MySQL 8.0:
 
