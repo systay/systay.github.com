@@ -63,11 +63,11 @@ mysql> EXPLAIN FORMAT=VITESS
 | └─ Route     | SelectUnsharded | ks2      |             | UNKNOWN    | Q2    |
 +--------------+-----------------+----------+-------------+------------+-------+
 
-Q1: select t1.c1, t1.c2, t2.c1 corder.sku from t1, t2 where t1.c1 = t2.c2 AND t1.c2 < t2.c2
+Q1: select t1.c1, t1.c2, t2.c1 from t1, t2 where t1.c1 = t2.c2 AND t1.c2 < t2.c2
 Q2: select t3.c1 from t3 where t3.c1 = :t2_c1
 ```
 
-The Vitess optimizer is also looking for efficient plans, but the since Vitess is a proxy, efficient mostly means with interacting as little as possible with the tablets.
+The Vitess optimizer is also looking for efficient plans, but since Vitess is a proxy, efficient mostly means interacting as little as possible with the underlying MySQL systems.
 
 For this query, Vitess needs to fetch data from two keyspaces. `t1` and `t2` are sharded tables that are on the `ks1` keyspace, and accessing that data is done by sending the join between `t1` and `t2` to all the shards of `ks1`. The `t3` table is unsharded on the `ks2` keyspace, so the join has to be performed on the vtgate layer, and can't be pushed down to MySQL.
 
