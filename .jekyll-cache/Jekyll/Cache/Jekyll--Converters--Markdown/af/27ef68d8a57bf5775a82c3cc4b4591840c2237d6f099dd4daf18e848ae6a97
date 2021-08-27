@@ -1,0 +1,177 @@
+I"�'<h1 id="cypher---a-view-from-a-recovering-sql-dba">Cypher - A view from a recovering SQL DBA</h1>
+
+<hr />
+<p><em>An SQL query walks into a bar and sees two tables.</em><br />
+<em>He walks up to them and asks ‘Can I join you?’</em></p>
+
+<p><em>An SQL query walks into a NOSQL bar, and finds no tables.</em><br />
+<em>So he leaves.</em></p>
+
+<hr />
+
+<p>For many years, I worked with SQL databases. I got to know the relational model and various SQL implementations very well, but then the world changed with the advent of NOSQL, and I changed too when I became heavily involved with Neo4j.</p>
+
+<p>I understand that changing from the familiar SQL to the unfamiliar NOSQL query languages is hard: no schemas, JSON all over the place, and no joins? But I’ve made it through the learning curve and so can you. This guide is all about people like us - people who understand SQL. We can use that prior knowledge to quickly get going with Cypher and start exploring Neo4j.</p>
+
+<h1 id="start">START</h1>
+
+<p>SQL starts with the result you want - we SELECT what we want and then declare how to source it. In Cypher, the START clause is quite a different concept which specifies starting points in the graph from which the query will execute.</p>
+
+<p>From a SQL point of view, the identifiers in a START are like table names that point to a set of nodes or relationships. The set can be listed literally, come via parameters, or as I show in the following example, be defined by an index look-up.</p>
+
+<p>So in fact rather than being SELECT-like, the START clause is somewhere between the FROM and the WHERE clause in SQL.</p>
+
+<h3 id="sql">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM  Person
+WHERE firstName = "Anakin"
+</code></pre></div></div>
+
+<h3 id="cypher">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START anakin=node:persons(firstName = "Anakin")
+RETURN anakin
+</code></pre></div></div>
+
+<p>Cypher allows multiple start points. This should not be strange from a SQL perspective - every table in the FROM clause is another start point.</p>
+
+<h1 id="match">MATCH</h1>
+
+<p>Unlike SQL which operates on sets, Cypher predominantly works on subgraphs. The relational equivalent is the current set of tuples being evaluated during a SELECT query.</p>
+
+<p>The shape of the subgraph is specified in the MATCH clause. The MATCH clause is analogous to the JOIN in SQL. A normal a–&gt;b relationship is an inner join between nodes a and b - both sides have to have at least one match, or nothing is returned.</p>
+
+<p>A simple example, where we find all nodes that are connected to node with id 101, through an incoming relationship.</p>
+
+<h3 id="sql-1">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT bar.*
+FROM foo 
+JOIN bar ON foo.id = bar.foo_id
+WHERE foo.id = 101
+</code></pre></div></div>
+
+<h3 id="cypher-1">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START foo=node(101)
+MATCH foo--&gt;bar
+RETURN bar
+</code></pre></div></div>
+
+<p>There is no join table here, but if one is necessary writing the pattern relationship like so: -[foo_bar]-&gt; will introduce (the equivalent of) a join table named foo_bar. In reality this is a named relationship in Cypher, so we’re saying “join foo to bar via foo_bar.”
+To illustrate this, consider this image, comparing the SQL modell and Neo4j/Cypher.</p>
+
+<p><img src="http://i.imgur.com/YkVFN.png" alt="Join" title="Join and patterns" /></p>
+
+<h3 id="sql-2">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT bar.*, foo_bar.*
+FROM foo 
+  JOIN foo_bar ON foo.id = foo_bar.foo_id 
+  JOIN bar ON foo_bar.bar_id = bar.id
+WHERE foo.id = 1
+</code></pre></div></div>
+
+<h3 id="cypher-2">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START foo=node(1)
+MATCH foo-[foo_bar]-&gt;bar
+RETURN bar, foo_bar
+</code></pre></div></div>
+
+<p>An <a href="http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html">outer join</a> is just as easy. Add a question mark -[?:KNOWS]-&gt; and it’s an optional relationship between nodes - the outer join of Cypher.</p>
+
+<p>Whether it’s a left outer join, or a right outer join is defined by which side of the pattern has a starting point. This first example is a left outer join, because the bound node is on the left side:</p>
+
+<h3 id="sql-3">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT bar.*
+FROM foo 
+LEFT JOIN bar ON foo.id = bar.foo_id
+WHERE foo.id = 1
+</code></pre></div></div>
+
+<h3 id="cypher-3">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START foo=node(1)
+MATCH foo-[?]-&gt;bar
+RETURN bar
+</code></pre></div></div>
+
+<p>If the right side is has the start point, it is a right outer join. And if both sides have starting points, it’s a full outer join, like this:</p>
+
+<h3 id="sql-4">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT bar.*
+FROM foo 
+  FULL OUTER JOIN bar ON foo.id = bar.foo_id
+WHERE foo.id = 1 and bar.id = 2
+</code></pre></div></div>
+
+<h3 id="cypher-4">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START foo=node(1), bar=node(2)
+MATCH foo-[r?]-&gt;bar
+RETURN r
+</code></pre></div></div>
+
+<p>Relationships in Neo4j are first class citizens - it’s like the SQL tables are pre-joined with each other. So, naturally, Cypher was designed to be able to handle highly connected data easily.</p>
+
+<p>One such domain is tree structures - anyone that has tried storing tree structures in SQL knows that you have to work hard to get around the limitations of the relational model. There are even books on the subject.</p>
+
+<p>To find all the groups and sub-groups that Anakin belongs to,  this query is enough in Cypher:</p>
+
+<h3 id="cypher-5">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START user=node:person(name="Anakin")
+MATCH group&lt;-[:BELONGS_TO*]-user
+RETURN group
+</code></pre></div></div>
+
+<p>The * after the relationship type means that there can be multiple hops across BELONGS_TO relationships between group and user. Some SQL dialects have recursive abilities, that allow the expression of queries like this, but personally I’ve always had a hard time wrapping my head around those. Expressing something like this in SQL is hugely impractical if not practically impossible.</p>
+
+<h1 id="where">WHERE</h1>
+
+<p>This is the easiest thing to understand - it’s the same animal in both languages. It filters out result sets/subgraphs. Not all predicates have a equivalent in the other language, but the concept is the same.</p>
+
+<h3 id="sql-5">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT person.*
+FROM person
+WHERE person.age &gt;35 OR person.hair = "blonde"
+</code></pre></div></div>
+
+<h3 id="cypher-6">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START person = node:persons("name:*")
+WHERE person.age &gt;35 OR person.hair = "blonde"
+RETURN person
+</code></pre></div></div>
+
+<h1 id="return">RETURN</h1>
+
+<p>This is SQL’s SELECT. We just put it in the end because it felt better to have it there - you do a lot of matching and filtering, and finally, you return something.</p>
+
+<p>Aggregate queries work just like they do in SQL, apart from the fact that there is no explicit GROUP BY clause. Everything in the return clause that is not an aggregate function will be used as the grouping columns.</p>
+
+<h3 id="sql-6">SQL</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT person.name, count(*)
+FROM Person
+GROUP BY person.name
+ORDER BY person.name
+</code></pre></div></div>
+
+<h3 id="cypher-7">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START person=node:persons("name:*")
+RETURN person.name, count(*)
+ORDER BY person.name
+</code></pre></div></div>
+
+<p>Order by is the same in both languages - ORDER BY expression ASC/DESC. Nothing weird here.</p>
+
+<h1 id="use-the-right-tool">Use the right tool</h1>
+
+<p>No database is the silver bullet for data persistence and querying. That is what NOSQL means to us - look at your data and what you want to do with it, and then choose the appropriate tool for the job. Neo4j and Cypher are custom built for the challenges of heavily connected data. Compare the shortest path query <a href="http://stackoverflow.com/questions/6873772/sql-postgres-shortest-path-in-graph-recursion/6900257#6900257">here</a> (all 43 lines of it) with what it looks like in Cypher:</p>
+
+<h3 id="cypher-8">Cypher</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>START lucy=node(1000), kevin=node(759)
+MATCH p = shortestPath( lucy-[*]-kevin )
+RETURN p
+</code></pre></div></div>
+
+<h1 id="wrap-up">Wrap up</h1>
+
+<p>The performance characteristics are radically different when you move from a relational data store to Neo4j. Things that a SQL developer might fear because the performance bug has bitten there before, might not at all be expensive in a graph database.</p>
+
+<p>Relational databases have a different underlying model than graph databases, and so the query languages for them naturally have different design goals. Cypher was designed to make querying of complex, heavily interconnected data as natural as possible. It should not only make the querying possible, but we aim to have a query language that helps you think about your data query.</p>
+
+<p>If you know SQL well, you will quickly be productive with Cypher.</p>
+:ET

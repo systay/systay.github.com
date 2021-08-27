@@ -1,0 +1,134 @@
+I"E1<h1 id="code-generation-in-vitess">Code generation in Vitess</h1>
+
+<p>Golang is a wonderful language. It’s simple, and most of the time not confusing or surprising.
+This makes it easy to jump into library code and start reading and quickly understand what’s going on.
+On the other hand, coming from other languages, there are a few features that would make our lives easier.</p>
+
+<p>We are building Vitess using mostly golang, and most of us are happy with this choice.
+However, because of missing features in the language, we’ve had to build some tooling manually.</p>
+
+<p>Here follows a list of how we are using meta programming in Vitess.</p>
+
+<h3 id="grpc-messages-and-endpoints">GRPC messages and endpoints</h3>
+
+<p>Everyone uses code generation for protobuf, so that’s very interesting to write about. Moving on.</p>
+
+<h3 id="sql-parser">SQL Parser</h3>
+
+<p>We use goyacc to build our parser.
+Goyacc reads input in the form of a <code class="language-plaintext highlighter-rouge">sql.y</code> file, and it outputs the <code class="language-plaintext highlighter-rouge">sql.go</code> parser we use.
+Writing this manually would not really have been an option. The code would probably become slow and very difficult to maintain.
+To speed up the parser to ludicrous speed, we forked the goyacc code and adapted it to our needs. You can read more about this work <a href="https://github.com/vitessio/vitess/pull/7669">here</a>.</p>
+
+<h3 id="memory-usage-for-plans">Memory usage for plans</h3>
+
+<p>Query planning is a resource intensive task, and to make sure we don’t have to do that more than necessary, we cache plans.
+Whenever you are caching, you need to be concerned about the size of your caches - you don’t want the cache to eat too much memory.
+To do that, you need information about how much memory plan tree consume.
+And this is one of the shortcoming of golang - it’s very difficult to do this.
+So, again, meta generation came to the rescue.</p>
+
+<p>Go comes with excellent parser and tokeniser tools to allow you to read Go code as a stream of AST objects.
+Unfortunately, we need more than syntax when looking at our plans to make sense of them - we also need dependencies and type information.
+To get this, we use golang.org/x/tools/go/packages.</p>
+
+<p>What we do is to first find the plan struct, and from that, we find all types that are used by the fields of the plan.</p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="n">Plan</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">Type</span>         <span class="n">sqlparser</span><span class="o">.</span><span class="n">StatementType</span> 
+    <span class="n">Original</span>     <span class="kt">string</span>
+    <span class="n">Instructions</span> <span class="n">Primitive</span>
+    <span class="n">BindVarNeeds</span> <span class="o">*</span><span class="n">sqlparser</span><span class="o">.</span><span class="n">BindVarNeeds</span>
+    <span class="n">Warnings</span>     <span class="p">[]</span><span class="o">*</span><span class="n">querypb</span><span class="o">.</span><span class="n">QueryWarning</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>For every type that we encounter, we create a <code class="language-plaintext highlighter-rouge">CachedSize</code> method that can calculate the memory size of an instance.
+If the type happens to be an interface, we instead find all implementations and do the same exercise again.
+This is done until we have a method for all types that might show up in a plan-tree. You can look at what the these functions look like <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/cached_size.go">here</a>.</p>
+
+<h3 id="ast-tooling">AST tooling</h3>
+
+<p>After parsing, the tree structure that contains the original query has been turned into an abstract syntax tree, or an AST.
+It contains the information we need from the query, with the uninteresting bits such as whitespaces removed. 
+It’s a type safe version of the query the user sent us.</p>
+
+<p>Our AST is pretty large, and many developers work on it, adding new types and fields all the time.</p>
+
+<p>In order to plan queries, we needed a couple of utilities for our AST that Go does not provide for us.</p>
+
+<ol>
+  <li>
+    <p>First of, we needed to be able to traverse the AST - a plain old visitor that could traverse the whole tree quickly. <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_visit.go">Check out the code</a></p>
+  </li>
+  <li>
+    <p>We also need the ability to replace parts of the node. This is much like the visitor, but with a way to replace the node that is currently being visited. <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_rewrite.go">Check out the code</a></p>
+  </li>
+  <li>
+    <p>We need a way of doing equality comparisons without using <code class="language-plaintext highlighter-rouge">reflect.DeepEqual</code>.
+Struct comparisons in Go work as expected, until you have references in your structs. Then all bets are off.
+DeepEqual does what we need, but it does so slowly. Comparing our generated equality methods vs <code class="language-plaintext highlighter-rouge">reflect.DeepEqual</code> gives:</p>
+  </li>
+</ol>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>name       old time/op  new time/op  delta
+Equals-16   813µs ± 0%    11µs ± 1%  -98.64%  (p=0.000 n=9+9)
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">reflect.DeepEqual</code> is &gt;72 times slower than our generated comparator. <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_equals.go">Check out the code</a></p>
+
+<ol>
+  <li>
+    <p>We also need to be able to do a deep-clone of the AST. While exploring different alternative plans, we clone parts of the AST, so we can change it without changing the original. <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_clone.go">Check out the code</a></p>
+  </li>
+  <li>
+    <p>Finally, our AST knows how to print itself. 
+This is a little trickier than you might think, because we do precedence calculations for expressions to figure out where we need parenthesis. 
+To make this easy to write, we use something that looks a lot like printf - this allows us developers to write nicely readable code.
+Unfortunately, this is not very fast, since it basically means that we have to parse strings to be able to produce strings.
+Again, using the go/packages library, we can read the astPrintf lines, and then output a faster form of the same.
+The method that a developer would write would look something like:</p>
+  </li>
+</ol>
+
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="p">(</span><span class="n">node</span> <span class="o">*</span><span class="n">ComparisonExpr</span><span class="p">)</span> <span class="n">Format</span><span class="p">(</span><span class="n">buf</span> <span class="o">*</span><span class="n">TrackedBuffer</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">astPrintf</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s">"%l %s %r"</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Left</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Operator</span><span class="o">.</span><span class="n">ToString</span><span class="p">(),</span> <span class="n">node</span><span class="o">.</span><span class="n">Right</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">Escape</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">buf</span><span class="o">.</span><span class="n">astPrintf</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s">" escape %v"</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Escape</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>After code generation, the output becomes:</p>
+<div class="language-golang highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="p">(</span><span class="n">node</span> <span class="o">*</span><span class="n">ComparisonExpr</span><span class="p">)</span> <span class="n">formatFast</span><span class="p">(</span><span class="n">buf</span> <span class="o">*</span><span class="n">TrackedBuffer</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">printExpr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Left</span><span class="p">,</span> <span class="no">true</span><span class="p">)</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">WriteByte</span><span class="p">(</span><span class="sc">' '</span><span class="p">)</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">WriteString</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">Operator</span><span class="o">.</span><span class="n">ToString</span><span class="p">())</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">WriteByte</span><span class="p">(</span><span class="sc">' '</span><span class="p">)</span>
+	<span class="n">buf</span><span class="o">.</span><span class="n">printExpr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Right</span><span class="p">,</span> <span class="no">false</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">Escape</span> <span class="o">!=</span> <span class="no">nil</span> <span class="p">{</span>
+		<span class="n">buf</span><span class="o">.</span><span class="n">WriteString</span><span class="p">(</span><span class="s">" escape "</span><span class="p">)</span>
+		<span class="n">buf</span><span class="o">.</span><span class="n">printExpr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">Escape</span><span class="p">,</span> <span class="no">true</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="how-to-make-it-work">How to make it work</h3>
+
+<p>One learning we have had, is that it’s a good idea to hide the generated code behind an easy-to-use API.
+That is the method that the rest of the code base will interact with, not directly with the generated code.
+This gives us the chance to drastically change what the generated code looks like, but not have to change anything else in the code base.
+We use this pattern for the <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/parser.go">parser</a>, for the <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/rewriter_api.go">rewriter</a>, and for the <a href="https://github.com/vitessio/vitess/blob/master/go/vt/sqlparser/ast_funcs.go#L37">visitor</a>.</p>
+
+<h3 id="summary">Summary</h3>
+<p>We use code generation for two main reasons. 
+We are easily bored people, so writing lots of repetitive code would be no fun. 
+This code would be difficult to write correctly, and annoying to review.
+Using meta programming, we can avoid the repetitive code that is hard to get right and easy to mess up.</p>
+
+<p>The second reason is that it’s just easier to write fast code this way. 
+We benchmark and profile the generated code pretty hard, and make sure to squeeze as much juice as possible.
+Then we change the generator, and wham! 642 rewriter methods have been updated. 
+This would not really have been possible if we had to change those methods manually.</p>
+
+<p>Honorable mention:
+Most of this code is either written by, or heavily influenced by the latest developer luminary to join the PlanetScale and Vitess ranks - <a href="http://github.com/vmg">@vmg</a></p>
+:ET

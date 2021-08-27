@@ -1,0 +1,95 @@
+I"�<h1 id="life-of-a-vitess-query---semantic-analysis">Life of a Vitess Query - Semantic Analysis</h1>
+
+<p>(This is a post in a series. You should start here: <a href="/blog/2021/02/03/life-of-a-query-1">Parsing and Rewriting</a>)</p>
+
+<p>By now we have a well formed tree structure representing the query the user sent. Next step is called semantic analysis.</p>
+
+<p>I’ll use the following query to illustrate how it’s done.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+    <span class="n">tbl</span><span class="p">.</span><span class="n">col</span><span class="p">,</span>
+    <span class="p">(</span> <span class="k">SELECT</span> <span class="k">count</span><span class="p">(</span><span class="n">tbl</span><span class="p">.</span><span class="n">col</span><span class="p">)</span>
+      <span class="k">FROM</span> <span class="n">otherTable</span> <span class="k">as</span> <span class="n">tbl</span><span class="p">)</span>
+<span class="k">FROM</span>
+    <span class="n">tbl</span>
+</code></pre></div></div>
+
+<p>As a tree:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   SELECT (S1)
+    ├── Exprs
+    │   ├── tbl.col
+    │   └── SELECT (S2)
+    │       ├── Exprs
+    │       │   └── COUNT
+    │       │       └── tbl.col
+    │       └── FROM
+    │           └── otherTable as tbl
+    └── FROM
+        └── tbl
+</code></pre></div></div>
+
+<p>The main problem we are trying to solve - make it easy for the planner to know which table is meant when it encounters <code class="language-plaintext highlighter-rouge">tbl.col</code>.</p>
+
+<p>We start by figuring out which scopes exist, and which tables exist in each scope.</p>
+
+<p>Given this information, we can look at column expressions and resolve which tables are being referenced.</p>
+
+<p>Let’s go over what this would look like for this query.</p>
+
+<p>We start traversing the tree at the root, <strong>S1</strong>. Since this is a SELECT struct, we push a new scope on to the scope stack, and visit the FROM clause next.</p>
+
+<p>The scope stack, after visiting <strong>S1</strong> and its FROM:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(tbl)
+</code></pre></div></div>
+
+<p>Next we visit the SELECT expressions of <strong>S1</strong>. When we visit the first expression, we take note of the current scope, and move on.
+Now we know which scope this expression lives in and what tables are available to it.</p>
+
+<p>Next, we’ll visit the subquery that contains <strong>S2</strong>. When encountering <strong>S2</strong>, we push another scope on the stack and add the tables <strong>S2</strong> to this new scope.</p>
+
+<p>The scope stack, after visiting <strong>S2</strong> and its FROM:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(otherTable as tbl)
+(tbl)
+</code></pre></div></div>
+
+<p>When visiting the expressions of <strong>S2</strong>, we note the current scope for the expressions.</p>
+
+<p>There is nothing left of <strong>S2</strong> to visit, so we exit the sub query. When coming back up from <strong>S2</strong>, we pop the top-most scope, and we are ready to do the binding process.</p>
+
+<p>Binding is visiting all the column expressions, and figuring out, given the scoping information, which table the column belongs to. If the user has not provided a qualifier, we need to look up column information for all available tables and check if we can uniquely identify which one the user means. This binding information is stored the semantic table - the output of this process.</p>
+
+<p>To do this as fast as possible, we do this in a single tree traversal, not in to separate steps. This way, we don’t have to remember scope information per expression - we just use the current scope stack, looking down the stack until we find the table.</p>
+
+<p>Also, instead of using strings to reference the dependencies, we use bitmasks, where each table is a bit in an uint64 value.
+At the end of the semantic processing, we have the dependency information we need in for all expressions in the query.</p>
+
+<p>The devil is in the details, so let me spell it out:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">type</span> <span class="n">TableSet</span> <span class="kt">uint64</span>
+
+  <span class="k">type</span> <span class="n">table</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">tableName</span><span class="p">,</span> <span class="n">alias</span> <span class="kt">string</span>
+  <span class="p">}</span>
+
+  <span class="k">type</span> <span class="n">SemTable</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">Tables</span>           <span class="p">[]</span><span class="n">table</span>
+    <span class="n">exprDependencies</span> <span class="k">map</span><span class="p">[</span><span class="n">sqlparser</span><span class="o">.</span><span class="n">Expr</span><span class="p">]</span><span class="n">TableSet</span>
+  <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The way to get the TableSet for a table is to find the offset in the <code class="language-plaintext highlighter-rouge">Tables</code> for the table we are looking for, and then left shift 1 that many steps.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="p">(</span><span class="n">st</span> <span class="o">*</span><span class="n">SemTable</span><span class="p">)</span> <span class="n">TableSetFor</span><span class="p">(</span><span class="n">t</span> <span class="n">table</span><span class="p">)</span> <span class="n">TableSet</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">t2</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">st</span><span class="o">.</span><span class="n">Tables</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">t2</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="m">1</span> <span class="o">&lt;&lt;</span> <span class="n">idx</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="m">0</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This information is used to create the query graph, the next stop in the journey to a Vitess execution plan.</p>
+:ET

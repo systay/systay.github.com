@@ -21,7 +21,7 @@
 title: Conscious Incompetence
 email: andres@taylor.se
 description: >- # this means to ignore newlines until "baseurl:"
-  The writings of Andres Taylor. Mostly things about databases and query optimizers.
+
 baseurl: "/" # the subpath of your site, e.g. /blog
 url: "http://systay.github.io/" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: andres_taylor

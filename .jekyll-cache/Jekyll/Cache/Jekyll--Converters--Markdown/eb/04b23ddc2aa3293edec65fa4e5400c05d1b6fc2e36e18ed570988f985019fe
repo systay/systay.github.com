@@ -1,0 +1,42 @@
+I"�<h1 id="life-of-a-vitess-query---query-graph">Life of a Vitess Query - Query Graph</h1>
+
+<p>(This is a post in a series. You should start here: <a href="/blog/2021/02/03/life-of-a-query-1">Parsing and Rewriting</a>)</p>
+
+<p>The process of plan building is all about evaluating in which order to execute joins find the cheapest join combination we can use.</p>
+
+<p>So, we need a better data structure than a tree to represent this, and the title of this post has probably spoiled which one that is.</p>
+
+<p>A graph is perfect for this problem.<br />
+Tables are the nodes, and the join predicates are the relationships between them.</p>
+
+<p>As a struct, what I ended up using looks something like this:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="n">queryGraph</span> <span class="k">struct</span> <span class="p">{</span>
+  <span class="n">tables</span>     <span class="p">[]</span><span class="o">*</span><span class="n">queryTable</span>
+  <span class="n">predicates</span> <span class="k">map</span><span class="p">[</span><span class="n">semantics</span><span class="o">.</span><span class="n">TableSet</span><span class="p">][]</span><span class="n">sqlparser</span><span class="o">.</span><span class="n">Expr</span>
+<span class="p">}</span>
+
+<span class="c">// queryTable is a single FROM table, including all predicates particular to this table</span>
+<span class="k">type</span> <span class="n">queryTable</span> <span class="k">struct</span> <span class="p">{</span>
+  <span class="n">tableID</span>    <span class="n">semantics</span><span class="o">.</span><span class="n">TableSet</span>
+  <span class="n">alias</span>      <span class="o">*</span><span class="n">sqlparser</span><span class="o">.</span><span class="n">AliasedTableExpr</span>
+  <span class="n">table</span>      <span class="n">sqlparser</span><span class="o">.</span><span class="n">TableName</span>
+  <span class="n">predicates</span> <span class="p">[]</span><span class="n">sqlparser</span><span class="o">.</span><span class="n">Expr</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Sub queries complicate things, but I’m keeping it simple in these posts and not handling them.</p>
+
+<p>I think of the query graph as the <code class="language-plaintext highlighter-rouge">FROM</code> and the <code class="language-plaintext highlighter-rouge">WHERE</code> of the query. When doing join ordering, this is actually the only information we need - we don’t need anything else from the AST</p>
+
+<p>Let’s look at those structs a little more. 
+A <code class="language-plaintext highlighter-rouge">queryTable</code> struct contains information about a table, and all predicates that only depend on this particular single table.</p>
+
+<p>To find join predicates between two tables, we just do a bit OR between the two TableSet, and use that as the key to search for join predicates between the two tables.</p>
+
+<p>The common solution would probably have been an adjacency matrix, but using a <code class="language-plaintext highlighter-rouge">map[semantics.TableSet][]sqlparser.Expr</code> makes it possible to deal with N-way joins, something that would mean extra logic using a matrix.</p>
+
+<p>Just to recap - we start with a query as a string, which is parsed into an AST, that is distilled into a query graph.</p>
+
+<p>This is what we need to do join ordering.</p>
+:ET
