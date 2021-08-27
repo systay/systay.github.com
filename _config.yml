@@ -6,4 +6,4 @@ kramdown:
   syntax_highlighter: rouge
 exclude:
   README.md
-theme: jekyll-theme-hacker
+theme: jekyll-theme-tactile
