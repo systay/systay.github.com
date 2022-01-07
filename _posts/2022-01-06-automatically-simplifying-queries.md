@@ -6,7 +6,7 @@ title: Automatically simplifying queries
 # {{ page.title }}
 
 When we get bugs reported on the planner, it's often not simple and straight forward queries that created the problem.
-We have so many users that commonly used patterns in queries are already well-used and would have been reported and fixed a long time ago.
+We have so many users that commonly used patterns in queries are already well-used and bugs would have been reported and fixed a long time ago.
 
 Another source of buggy queries are ones that have been randomly created by our testing infrastructure.
 We do a lot of automated testing by fuzzing queries, and when these tests find problems, it's often weird looking queries that are using a weird combination of patterns.
@@ -109,7 +109,7 @@ where unsharded.foo > 42 and
 ```
 
 After every simplification, the simplifier starts again from the top, and tries to remove entire tables.
-One line 6, we can see that once the `SELECT` expressions have been simplified, we can now rip out `unsharded` altogether.
+On line 6, we can see that once the SELECT expressions have been simplified, we can now rip out `unsharded` altogether.
 
 Finally, one line 7, we can also remove the predicate in the WHERE clause, leaving us with this query:
 
@@ -124,7 +124,7 @@ It tries removing this leaf here, and that one there, and after every change, it
 
 Once nothing can be removed, the simplifier is done.
 
-### Parting words
+### Performance
 
 There are plenty of papers out there that show algorithms for how to do simplification efficiently.
 After reading a couple of them, in the end, I didn't actually use any of the algorithms.
