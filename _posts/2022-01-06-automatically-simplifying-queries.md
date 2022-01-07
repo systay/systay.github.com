@@ -1,6 +1,6 @@
 ---
 layout: blog
-title: Automatically simplifying bug reports
+title: Automatically simplifying queries
 ---
 
 # {{ page.title }}
