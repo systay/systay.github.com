@@ -88,10 +88,12 @@ where unsharded.foo > 42 and
 Already a much simpler query, but there is still more we can do.
 
 Next up, line `2` changes `count(*)` to `count(0)`.
+
 Line 3-5, the shrinker simplifies expressions.
 The first simplification is always to simply remove the expression, but if that is too much and the error goes away, the expression can be broken down into it's sub expressions.
 It tries all different combination of sub expressions, and just keeps the first one that still fails with the same error.
-So, an expressions like `a + b`, the shrinker would try replacing it with `a` first and then with `b`, and if either is still producing the same error, that is what we keep.
+
+Given an expressions like `a + b`, the shrinker would try replacing it with `a` first and then with `b`, and if either is still producing the same error, that is what we keep.
 In line 3, it replaced the `+` operator with the left argument, and then in line 4 the function call is replaced with the argument to the function.
 And finally in line 5, it found that a column access can be simplified by using a literal instead.
 Now we have a query that looks like:
