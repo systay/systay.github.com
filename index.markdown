@@ -6,6 +6,7 @@ Find more of my online stuff here:
 <ul>
   <li><a href="https://github.com/systay">Github</a> </li>
   <li><a href="https://twitter.com/andres_taylor">Twitter</a></li>
+  <li><a rel="me" href="https://fosstodon.org/@systay">Mastodon</a></li>	
 </ul>  
 
 
