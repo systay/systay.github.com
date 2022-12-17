@@ -56,5 +56,12 @@ Find more of my online stuff here:
 			<div class="post_summary"></div>
       <hr>
 		</div>			 	
+    <div class="post">
+			<div>
+				<span class="post_date">15 Dec 2022</span> » <a href="https://planetscale.com/blog/what-is-a-query-planner">What is a query planner?</a>
+			</div>
+			<div class="post_summary"></div>
+      <hr>
+		</div>			 	
 
 </div>
