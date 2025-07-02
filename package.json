@@ -1,0 +1,29 @@
+{
+  "name": "conscious-incompetence",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next build && next export",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "date-fns": "^3.6.0",
+    "gray-matter": "^4.0.3",
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "remark": "^15.0.1",
+    "remark-html": "^16.0.1",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5"
+  }
+}
