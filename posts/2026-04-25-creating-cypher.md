@@ -4,8 +4,6 @@ title: Creating Cypher
 summary: How a Friday side-project at Neo4j turned into a query language
 ---
 
-# {{ page.title }}
-
 I started working at a database company in 2010. Up to that point, I had worked extensively with databases during my whole career, but always from the outside. I'd worked as a DBA and as a developer focused on the data layer. During this time, I learned to read execution plans very well, and built up enough experience that I had a bit of intuition around this stuff. To me it was magical - how something could turn my SQL query into an optimised execution plan blew me away.
 
 I remember many late evenings poring over Microsoft SQL Server's horizontal query plans and their documentation listing [every single operator possible](https://learn.microsoft.com/en-us/sql/relational-databases/showplan-logical-and-physical-operators-reference?view=sql-server-ver17).
