@@ -61,7 +61,7 @@ What surprised me the most wasn’t that Cypher shipped.
 
 It was that it didn’t stay ours.
 
-Over time, people started implementing Cypher outside of Neo4j. Different databases, research systems, experimental runtimes — all taking the same ideas and building their own versions. At some point I started keeping a list of these implementations, partly out of curiosity, partly because it felt surreal that something that started as a Friday experiment had become something others wanted to recreate.
+Over time, people started implementing Cypher outside of Neo4j. Different databases, research systems, experimental runtimes — all taking the same ideas and building their own versions. It felt surreal that something that started as a Friday experiment had become something others wanted to recreate.
 
 I never set out to design a language.
 But once it existed, it stopped being mine.
