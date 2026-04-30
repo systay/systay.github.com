@@ -49,8 +49,6 @@ export default function Layout({
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:creator" content="@andres_taylor" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -67,12 +65,6 @@ export default function Layout({
             <Link href="/about">About</Link>
             <a href="https://github.com/systay" target="_blank" rel="noopener noreferrer">
               GitHub
-            </a>
-            <a href="https://twitter.com/andres_taylor" target="_blank" rel="noopener noreferrer">
-              Twitter
-            </a>
-            <a href="https://fosstodon.org/@systay" target="_blank" rel="noopener noreferrer">
-              Mastodon
             </a>
             <button 
               className="theme-toggle" 

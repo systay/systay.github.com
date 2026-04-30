@@ -50,12 +50,6 @@ export default function About() {
             You can find me on{' '}
             <a href="https://github.com/systay" target="_blank" rel="noopener noreferrer">
               GitHub
-            </a>,{' '}
-            <a href="https://twitter.com/andres_taylor" target="_blank" rel="noopener noreferrer">
-              Twitter
-            </a>, or{' '}
-            <a href="https://fosstodon.org/@systay" target="_blank" rel="noopener noreferrer">
-              Mastodon
             </a>. You can also email me at andres@taylor.se.
           </p>
 
